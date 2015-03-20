@@ -1,6 +1,6 @@
 {
 	"debugMode" : false,
-	"runIntervalSeconds" : 60,
+	"runIntervalSeconds" : 2,
     "graphite": {
         "host": "http://graphite",
         "port": "2003"
@@ -219,7 +219,7 @@
                 {
                     "host": "mongo",
                     "port": 27017
-                },
+                }
             ]
         }
     ],
