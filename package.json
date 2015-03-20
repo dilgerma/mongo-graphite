@@ -3,7 +3,8 @@
 	"main":"./mongo-graphite.js",
 	"description": "Script to call mongo and parse relevant info out and send to graphite.",
 	"contributors": [
-		"Matt Self <self.matt@gmail.com>"
+		"Matt Self <self.matt@gmail.com>",
+	    "Martin Dilger <martin@effectivetrainings.de>"
 	],
 	"private": false,
 	"version": "0.1.0",
