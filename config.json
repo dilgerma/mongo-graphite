@@ -210,11 +210,7 @@
         {
             "name": "admin",
             "user": "admin",
-            "pass": {
-                "_value": "EAAQgbLD0i560YHI0famDy0fWQ",
-                "_isSensitive": true,
-                "_isCipherText": true
-            },
+            "pass": "admin",
             "servers": [
                 {
                     "host": "mongo",
@@ -222,10 +218,5 @@
                 }
             ]
         }
-    ],
-    "decrypt": {
-        "moniker": "matttest02",
-        "algorithm":"aes"
-    }
-
+    ]
 }

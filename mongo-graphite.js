@@ -1,6 +1,4 @@
-var Db = require('mongodb').Db,
-    Server = require('mongodb').Server,
-    Admin = require('mongodb').Admin,
+var MongoClient = require('mongodb').MongoClient,
     ReadPreference = require('mongodb').ReadPreference,
     _ = require('underscore'),
     ReplSetServers = require('mongodb').ReplSetServers,
@@ -58,7 +56,7 @@ notifyGraphite = function () {
                         var servers = currentDb.servers;
                         var dbName = currentDb.name;
                         var user = currentDb.user;
-                        var password = currentDb.pass._value;
+                        var password = currentDb.pass;
 
                         if (currentDb.pass._isCipherText == true) {
                             decryptor.decrypt(config.decrypt.algorithm, config.decrypt.moniker, password, function (err, result) {
@@ -90,69 +88,71 @@ console.log("Setting graphite notification interval to " + (gather_interval / 10
 setInterval(notifyGraphite, gather_interval);
 console.log("Waiting..");
 
+var mongoConnectionString = function (host, port, user, pass, db) {
+    console.log("user: " + user + ", " + "pass " + pass );
+    var userPassword = (user ? user : "") + (pass ? (":" + pass) : "");
+    return "mongodb://" + (userPassword ? userPassword + "@" : "") + host + ":" + port + (db ? ("/" + db) : "");
+};
+
 var pullAndSend = function (servers, dbName, user, password, currentCommand) {
     console.log("Notifying mongo instances " + JSON.stringify(servers));
     var serverArray = [];
 
     for (var y = 0; y < servers.length; y++) {
 
-        var serverHost = servers[y].host;
-        var serverPort = servers[y].port;
+        var host = servers[y].host;
+        var port = servers[y].port;
 
-        db = new Db(dbName, new Server(serverHost, serverPort, {}, {}), {
-            auto_reconnect: true,
-            safe: true,
-            strict: true
+        var url = mongoConnectionString(host, port, user, password);
+        console.log("connecting to " + url);
+        MongoClient.connect(url, function (err, db) {
+
+            if (err) {
+                console.error("Database connection failed : " + err);
+            } else {
+                console.log("Database connetion established");
+                db.authenticate(user, password, function (err) {
+
+                    if (err) {
+                        console.error('unable to login', err);
+                        db.close();
+                    } else {
+                        db.command(currentCommand.commandObject, function (err, result) {
+                            //console.log('command callback', err, result);
+
+                            var parser = new JsonParser();
+                            var metricsToCapture = currentCommand.valueToGraphite;
+                            for (var a = metricsToCapture.length - 1; a >= 0; a--) {
+
+                                var value = parser.parse(metricsToCapture[a].location, result);
+
+                                host = host.replace(/\./g, '_');
+
+                                var metricName = 'mongodb.' + host + '.' + db.databaseName + '.' + metricsToCapture[a].location;
+                                if (value || value === 0) {
+                                    var tempObj = {};
+                                    tempObj[metricName] = value;
+                                    if (debugMode) {
+                                        console.log('sending metric:', tempObj);
+                                    }
+                                    gc.write(tempObj);
+                                } else {
+                                    if (debugMode) {
+                                        console.log('no value for metric:', metricName, value);
+                                    }
+                                }
+
+                            }
+                            db.close();
+                        })
+
+                    }
+                });
+            }
+
         });
 
-        (function (database, host, user, password, currentCommand) {
-            database.open(function (err, database) {
-                if (err) {
-                    console.error("Database connection failed : " + err);
-                } else {
-                    console.log("Database connetion established");
-                    database.authenticate(user, password, function (err) {
 
-                        if (err) {
-                            console.error('unable to login', err);
-                            database.close();
-                        } else {
-                            database.command(currentCommand.commandObject, function (err, result) {
-                                //console.log('command callback', err, result);
-
-                                var parser = new JsonParser();
-                                var metricsToCapture = currentCommand.valueToGraphite;
-                                for (var a = metricsToCapture.length - 1; a >= 0; a--) {
-
-                                    var value = parser.parse(metricsToCapture[a].location, result);
-
-                                    host = host.replace(/\./g, '_');
-
-                                    var metricName = 'mongodb.' + host + '.' + database.databaseName + '.' + metricsToCapture[a].location;
-                                    if (value || value === 0) {
-                                        var tempObj = {};
-                                        tempObj[metricName] = value;
-                                        if (debugMode) {
-                                            console.log('sending metric:', tempObj);
-                                        }
-                                        gc.write(tempObj);
-                                    } else {
-                                        if (debugMode) {
-                                            console.log('no value for metric:', metricName, value);
-                                        }
-                                    }
-
-                                }
-                                database.close();
-                            })
-
-                        }
-                    });
-                }
-            });
-
-        }
-        )(db, serverHost, user, password, currentCommand);
     }
 };
 
