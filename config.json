@@ -217,17 +217,9 @@
             },
             "servers": [
                 {
-                    "host": "Mongo1.test-labs.net",
+                    "host": "mongo",
                     "port": 27017
                 },
-                {
-                    "host": "Mongo2.test-labs.net",
-                    "port": 27017
-                },
-                {
-                    "host": "Mongo3.test-labs.net",
-                    "port": 27017
-                }
             ]
         }
     ],
