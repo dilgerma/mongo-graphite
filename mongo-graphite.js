@@ -5,16 +5,7 @@ var MongoClient = require('mongodb').MongoClient,
     GraphiteClient = require('./lib/GraphiteClient'),
     config = require('./config.json');
 
-var Decryptor = null;
-
 var args = process.argv.slice(2);
-if (args) {
-    Decryptor = args[0];
-}
-if (!Decryptor) {
-    Decryptor = require('./lib/nullDecryptor');
-}
-var decryptor = new Decryptor();
 
 process.argv.forEach(function (val, index, array) {
     console.log(index + ': ' + val);
@@ -35,14 +26,13 @@ var gc = new GraphiteClient(graphiteConfig);
 
 notifyGraphite = function () {
 
+    console.log("Notification startet for " + JSON.stringify(config));
     //loop through the "commands" we plan to run
     for (var i = config.commands.length - 1; i >= 0; i--) {
 
         var command = config.commands[i];
 
-        if (debugMode) {
-            console.log('command:', command);
-        }
+        console.log('command:', command);
         var target = command.targetDb;
 
 
@@ -57,22 +47,7 @@ notifyGraphite = function () {
                         var dbName = currentDb.name;
                         var user = currentDb.user;
                         var password = currentDb.pass;
-
-                        if (currentDb.pass._isCipherText == true) {
-                            decryptor.decrypt(config.decrypt.algorithm, config.decrypt.moniker, password, function (err, result) {
-                                if (err) {
-                                    console.log('A problem occurred while attempting to decrypt the password.  We will be unable to call mongo. ', err)
-                                } else {
-                                    password = result;
-                                    pullAndSend(servers, dbName, user, password, currentCommand);
-                                }
-                            });
-
-                        }
-                        else {
-                            pullAndSend(servers, dbName, user, password, currentCommand);
-                        }
-
+                        pullAndSend(servers, dbName, user, password, currentCommand);
                     }
 
                 } else {
@@ -89,7 +64,7 @@ setInterval(notifyGraphite, gather_interval);
 console.log("Waiting..");
 
 var mongoConnectionString = function (host, port, user, pass, db) {
-    console.log("user: " + user + ", " + "pass " + pass );
+    console.log("user: " + user + ", " + "pass " + pass);
     var userPassword = (user ? user : "") + (pass ? (":" + pass) : "");
     return "mongodb://" + (userPassword ? userPassword + "@" : "") + host + ":" + port + (db ? ("/" + db) : "");
 };
