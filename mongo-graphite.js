@@ -70,7 +70,7 @@ var pullAndSend = function (servers, dbName, user, password, currentCommand) {
     console.log("Notifying mongo instances " + JSON.stringify(servers));
     var serverArray = [];
 
-    if(!_.isArray(servers)) {
+    if (!_.isArray(servers)) {
         servers = [servers];
     }
 
@@ -79,7 +79,7 @@ var pullAndSend = function (servers, dbName, user, password, currentCommand) {
         var host = servers[y].host;
         var port = servers[y].port;
 
-        var url = mongoConnectionString(host, port, user, password);
+        var url = mongoConnectionString(host, port, user, password, dbName);
         console.log("connecting to " + url);
         MongoClient.connect(url, function (err, db) {
 
@@ -87,44 +87,34 @@ var pullAndSend = function (servers, dbName, user, password, currentCommand) {
                 console.error("Database connection failed : " + err);
             } else {
                 console.log("Database connetion established");
-                db.authenticate(user, password, function (err) {
 
-                    if (err) {
-                        console.error('unable to login', err);
-                        db.close();
-                    } else {
-                        db.command(currentCommand.commandObject, function (err, result) {
-                            //console.log('command callback', err, result);
+                db.command(currentCommand.commandObject, function (err, result) {
+                    //console.log('command callback', err, result);
 
-                            var parser = new JsonParser();
-                            var metricsToCapture = currentCommand.valueToGraphite;
-                            for (var a = metricsToCapture.length - 1; a >= 0; a--) {
+                    var parser = new JsonParser();
+                    var metricsToCapture = currentCommand.valueToGraphite;
+                    for (var a = metricsToCapture.length - 1; a >= 0; a--) {
 
-                                var value = parser.parse(metricsToCapture[a].location, result);
+                        var value = parser.parse(metricsToCapture[a].location, result);
 
-                                host = host.replace(/\./g, '_');
+                        host = host.replace(/\./g, '_');
 
-                                var metricName = 'mongodb.' + host + '.' + db.databaseName + '.' + metricsToCapture[a].location;
-                                if (value || value === 0) {
-                                    var tempObj = {};
-                                    tempObj[metricName] = value;
-                                    console.log('sending metric to graphite:', tempObj);
-                                    gc.write(tempObj);
-                                } else {
-                                    console.log('no value for metric:', metricName, value);
-                                }
-
-                            }
-                            db.close();
-                        })
+                        var metricName = 'mongodb.' + host + '.' + db.databaseName + '.' + metricsToCapture[a].location;
+                        if (value || value === 0) {
+                            var tempObj = {};
+                            tempObj[metricName] = value;
+                            console.log('sending metric to graphite:', tempObj);
+                            gc.write(tempObj);
+                        } else {
+                            console.log('no value for metric:', metricName, value);
+                        }
 
                     }
-                });
+                    db.close();
+                })
+
             }
-
         });
-
-
     }
 };
 
