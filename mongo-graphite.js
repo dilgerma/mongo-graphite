@@ -31,24 +31,19 @@ notifyGraphite = function () {
     for (var i = config.commands.length - 1; i >= 0; i--) {
 
         var command = config.commands[i];
-
-        console.log('command:', command);
         var target = command.targetDb;
-
 
         (function (currentCommand, targetDb) {
 
-            //now loop through the dbs, and match them with the command. TODO:
+            //now loop through the dbs, and match them with the command.
             for (var z = config.dbs.length - 1; z >= 0; z--) {
                 if (config.dbs[z].name.toLowerCase() === targetDb.toLowerCase()) {
                     var currentDb = config.dbs[z];
-                    if (_.isArray(currentDb.servers)) {
-                        var servers = currentDb.servers;
-                        var dbName = currentDb.name;
-                        var user = currentDb.user;
-                        var password = currentDb.pass;
-                        pullAndSend(servers, dbName, user, password, currentCommand);
-                    }
+                    var servers = currentDb.servers;
+                    var dbName = currentDb.name;
+                    var user = currentDb.user;
+                    var password = currentDb.pass;
+                    pullAndSend(servers, dbName, user, password, currentCommand);
 
                 } else {
                     //console.log('No matching database defined for command target db:', targetDb);
@@ -72,6 +67,10 @@ var mongoConnectionString = function (host, port, user, pass, db) {
 var pullAndSend = function (servers, dbName, user, password, currentCommand) {
     console.log("Notifying mongo instances " + JSON.stringify(servers));
     var serverArray = [];
+
+    if(!_.isArray(servers)) {
+        servers = [servers];
+    }
 
     for (var y = 0; y < servers.length; y++) {
 
@@ -107,14 +106,10 @@ var pullAndSend = function (servers, dbName, user, password, currentCommand) {
                                 if (value || value === 0) {
                                     var tempObj = {};
                                     tempObj[metricName] = value;
-                                    if (debugMode) {
-                                        console.log('sending metric:', tempObj);
-                                    }
+                                    console.log('sending metric to graphite:', tempObj);
                                     gc.write(tempObj);
                                 } else {
-                                    if (debugMode) {
-                                        console.log('no value for metric:', metricName, value);
-                                    }
+                                    console.log('no value for metric:', metricName, value);
                                 }
 
                             }
