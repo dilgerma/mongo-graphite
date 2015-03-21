@@ -48,7 +48,7 @@ notifyGraphite = function () {
                     pullAndSend(servers, dbName, user, password, currentCommand);
 
                 } else {
-                    console.error('No matching database defined for command target db:', targetDb);
+                    console.error('No matching database defined for command target db:' + targetDb + ". Please check your config if you have a typo in the database name.");
                 }
             }
         })(command, target);
