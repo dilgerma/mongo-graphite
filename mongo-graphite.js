@@ -35,6 +35,7 @@ notifyGraphite = function () {
 
         (function (currentCommand, targetDb) {
 
+            console.log("initializing - collecting data from mongo instance : " + targetDb);
             //now loop through the dbs, and match them with the command.
             for (var z = config.dbs.length - 1; z >= 0; z--) {
                 if (config.dbs[z].name.toLowerCase() === targetDb.toLowerCase()) {
@@ -43,10 +44,11 @@ notifyGraphite = function () {
                     var dbName = currentDb.name;
                     var user = currentDb.user;
                     var password = currentDb.pass;
+                    console.log("loading from mongo / sending to graphite initiated");
                     pullAndSend(servers, dbName, user, password, currentCommand);
 
                 } else {
-                    //console.log('No matching database defined for command target db:', targetDb);
+                    console.error('No matching database defined for command target db:', targetDb);
                 }
             }
         })(command, target);
