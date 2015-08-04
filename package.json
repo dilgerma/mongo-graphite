@@ -24,9 +24,6 @@
 	"directories": {
 		"lib": "."
 	},
-	"files": [
-		""
-	],
 	"repository": {
 		"type": "git",
 		"url": "git@github.com:m4tty/mongo-graphite.git"
